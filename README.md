@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/sun-guannan-vectcutapi-badge.png)](https://mseep.ai/app/sun-guannan-vectcutapi)
+
 
 # Connect AI generates via VectCutAPI [Try it online](https://www.vectcut.com)
 
