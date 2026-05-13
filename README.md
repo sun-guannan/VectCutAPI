@@ -107,9 +107,9 @@ Create or update the `mcp_config.json` configuration file:
     "capcut-api": {
       "command": "python3",
       "args": ["mcp_server.py"],
-      "cwd": "/path/to/CapCutAPI",
+      "cwd": "/path/to/VectCutAPI",
       "env": {
-        "PYTHONPATH": "/path/to/CapCutAPI",
+        "PYTHONPATH": "/path/to/VectCutAPI",
         "DEBUG": "0"
       }
     }
