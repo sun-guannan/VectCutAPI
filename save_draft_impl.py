@@ -1,8 +1,7 @@
 import os
-import re
 import pyJianYingDraft as draft
 import shutil
-from util import zip_draft, is_windows_path
+from util import zip_draft, build_draft_asset_path
 from oss import upload_to_oss
 from typing import Dict, Literal
 from draft_cache import DRAFT_CACHE
@@ -20,7 +19,8 @@ import time
 import requests # Import requests for making HTTP calls
 import logging
 # Import configuration
-from settings import IS_CAPCUT_ENV, IS_UPLOAD_DRAFT
+from settings import IS_UPLOAD_DRAFT
+from draft_profiles import get_draft_profile, write_profile_content
 
 # --- Get your Logger instance ---
 # The name here must match the logger name you configured in app.py
@@ -38,17 +38,7 @@ def build_asset_path(draft_folder: str, draft_id: str, asset_type: str, material
     :param material_name: Material name
     :return: Built path
     """
-    if is_windows_path(draft_folder):
-        if os.name == 'nt': # 'nt' for Windows
-            draft_real_path = os.path.join(draft_folder, draft_id, "assets", asset_type, material_name)
-        else:
-            windows_drive, windows_path = re.match(r'([a-zA-Z]:)(.*)', draft_folder).groups()
-            parts = [p for p in windows_path.split('\\') if p]
-            draft_real_path = os.path.join(windows_drive, *parts, draft_id, "assets", asset_type, material_name)
-            draft_real_path = draft_real_path.replace('/', '\\')
-    else:
-        draft_real_path = os.path.join(draft_folder, draft_id, "assets", asset_type, material_name)
-    return draft_real_path
+    return build_draft_asset_path(draft_folder, draft_id, asset_type, material_name)
 
 def save_draft_background(draft_id, draft_folder, task_id):
     """Background save draft to OSS"""
@@ -92,7 +82,8 @@ def save_draft_background(draft_id, draft_folder, task_id):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         draft_folder_for_duplicate = draft.Draft_folder(current_dir)
         # Choose different template directory based on configuration
-        template_dir = "template" if IS_CAPCUT_ENV else "template_jianying"
+        draft_profile = get_draft_profile()
+        template_dir = draft_profile.template_dir
         draft_folder_for_duplicate.duplicate_as_template(template_dir, draft_id)
         
         # Update task status
@@ -212,8 +203,9 @@ def save_draft_background(draft_id, draft_folder, task_id):
         update_task_field(task_id, "message", "Saving draft information")
         logger.info(f"Task {task_id} progress 70%: Saving draft information.")
         
-        script.dump(os.path.join(current_dir, f"{draft_id}/draft_info.json"))
-        logger.info(f"Draft information has been saved to {os.path.join(current_dir, draft_id)}/draft_info.json.")
+        draft_dir = os.path.join(current_dir, draft_id)
+        written_files = write_profile_content(draft_profile, draft_dir, script.dumps())
+        logger.info(f"Draft information has been saved to {[str(path) for path in written_files]}.")
 
         draft_url = ""
         # Only upload draft information when IS_UPLOAD_DRAFT is True
@@ -575,7 +567,8 @@ def download_script(draft_id: str, draft_folder: str = None, script_data: Dict =
 
     logger.info(f"Starting to download draft: {draft_id} to folder: {draft_folder}")
     # Copy template to target directory
-    template_path = os.path.join("./", 'template') if IS_CAPCUT_ENV else os.path.join("./", 'template_jianying')
+    draft_profile = get_draft_profile()
+    template_path = os.path.join("./", draft_profile.template_dir)
     new_draft_path = os.path.join(draft_folder, draft_id)
     if os.path.exists(new_draft_path):
         logger.warning(f"Deleting existing draft target folder: {new_draft_path}")
@@ -696,8 +689,7 @@ def download_script(draft_id: str, draft_folder: str = None, script_data: Dict =
             logger.info(f"Concurrent download completed, downloaded {len(downloaded_paths)} files in total.")
         
         """Write draft file content to file"""
-        with open(f"{draft_folder}/{draft_id}/draft_info.json", "w", encoding="utf-8") as f:
-            f.write(json.dumps(script_data))
+        write_profile_content(draft_profile, os.path.join(draft_folder, draft_id), json.dumps(script_data, ensure_ascii=False))
         logger.info(f"Draft has been saved.")
 
         # No draft_url for download, but return success

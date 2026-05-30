@@ -1,9 +1,7 @@
 # 导入必要的模块
-import os
 import pyJianYingDraft as draft
 import time
-from util import generate_draft_url, is_windows_path, url_to_hash
-import re
+from util import generate_draft_url, url_to_hash, build_draft_asset_path
 from typing import Optional, Dict, Tuple, List
 from pyJianYingDraft import exceptions, Audio_scene_effect_type, Tone_effect_type, Speech_to_song_type, CapCut_Voice_filters_effect_type,CapCut_Voice_characters_effect_type,CapCut_Speech_to_song_effect_type, trange
 from create_draft import get_or_create_draft
@@ -81,16 +79,7 @@ def add_audio_track(
     # Build draft_audio_path
     draft_audio_path = None
     if draft_folder:
-        if is_windows_path(draft_folder):
-            # Windows path processing
-            windows_drive, windows_path = re.match(r'([a-zA-Z]:)(.*)', draft_folder).groups()
-            parts = [p for p in windows_path.split('\\') if p]
-            draft_audio_path = os.path.join(windows_drive, *parts, draft_id, "assets", "audio", material_name)
-            # Normalize path (ensure consistent separators)
-            draft_audio_path = draft_audio_path.replace('/', '\\')
-        else:
-            # macOS/Linux path processing
-            draft_audio_path = os.path.join(draft_folder, draft_id, "assets", "audio", material_name)
+        draft_audio_path = build_draft_asset_path(draft_folder, draft_id, "audio", material_name)
     
     # Set default value for audio end time
     audio_end = end if end is not None else audio_duration

@@ -6,6 +6,7 @@ import shutil
 from typing import List
 
 from .script_file import Script_file
+from draft_profiles import get_draft_profile
 
 class Draft_folder:
     """管理一个文件夹及其内的一系列草稿"""
@@ -81,7 +82,7 @@ class Draft_folder:
         if not os.path.exists(draft_path):
             raise FileNotFoundError(f"草稿文件夹 {draft_name} 不存在")
 
-        return Script_file.load_template(os.path.join(draft_path, "draft_info.json"))
+        return Script_file.load_template(os.path.join(draft_path, get_draft_profile().content_file))
 
     def duplicate_as_template(self, template_name: str, new_draft_name: str, allow_replace: bool = False) -> Script_file:
         """复制一份给定的草稿, 并在复制出的新草稿上进行编辑
