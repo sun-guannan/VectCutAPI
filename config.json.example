@@ -1,5 +1,6 @@
 {
-  "is_capcut_env": true,  // Whether to use CapCut environment (true) or JianYing environment (false)
+  "draft_profile": "capcut_legacy",  // capcut_legacy, jianying_legacy, or jianying_pro_10 for Jianying Pro 10.x
+  "is_capcut_env": true,  // Backward-compatible fallback. Ignored when draft_profile is set.
   "draft_domain": "https://www.capcutapi.top",  // Base domain for draft operations
   "port": 9001,  // Port number for the local server
   "preview_router": "/draft/downloader",  // Router path for preview functionality

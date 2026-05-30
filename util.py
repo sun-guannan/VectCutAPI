@@ -27,6 +27,18 @@ def is_windows_path(path):
     # Check if it starts with a drive letter (e.g. C:\) or contains Windows style separators
     return re.match(r'^[a-zA-Z]:\\|\\\\', path) is not None
 
+def build_draft_asset_path(draft_folder: str, draft_id: str, asset_type: str, material_name: str) -> str:
+    """Build the path Jianying/CapCut should use for a material inside a draft."""
+    if is_windows_path(draft_folder):
+        if os.name == 'nt':
+            return os.path.join(draft_folder, draft_id, "assets", asset_type, material_name)
+
+        windows_drive, windows_path = re.match(r'([a-zA-Z]:)(.*)', draft_folder).groups()
+        parts = [p for p in windows_path.split('\\') if p]
+        return os.path.join(f"{windows_drive}\\", *parts, draft_id, "assets", asset_type, material_name).replace('/', '\\')
+
+    return os.path.join(draft_folder, draft_id, "assets", asset_type, material_name)
+
 
 def zip_draft(draft_id):
     current_dir = os.path.dirname(os.path.abspath(__file__))
