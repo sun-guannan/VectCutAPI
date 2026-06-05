@@ -35,8 +35,7 @@ def assign_attr_with_json(obj: object, attrs: List[str], json_data: Dict[str, An
     """
     type_hints: Dict[str, Type] = {}
     for cls in obj.__class__.__mro__:
-        if '__annotations__' in cls.__dict__:
-            type_hints.update(cls.__annotations__)
+        type_hints.update(inspect.get_annotations(cls))
 
     for attr in attrs:
         if hasattr(type_hints[attr], 'import_json'):
