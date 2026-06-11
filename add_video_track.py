@@ -1,10 +1,8 @@
-import os
 import pyJianYingDraft as draft
 import time
 from settings.local import IS_CAPCUT_ENV
-from util import generate_draft_url, is_windows_path, url_to_hash
+from util import generate_draft_url, url_to_hash, build_draft_asset_path
 from pyJianYingDraft import trange, Clip_settings
-import re
 from typing import Optional, Dict
 from pyJianYingDraft import exceptions
 from create_draft import get_or_create_draft
@@ -125,18 +123,7 @@ def add_video_track(
     # Build draft_video_path
     draft_video_path = None
     if draft_folder:
-        # Detect input path type and process
-        if is_windows_path(draft_folder):
-            # Windows path processing
-            windows_drive, windows_path = re.match(r'([a-zA-Z]:)(.*)', draft_folder).groups()
-            parts = [p for p in windows_path.split('\\') if p]  # Split path and filter empty parts
-            draft_video_path = os.path.join(windows_drive, *parts, draft_id, "assets", "video", material_name)
-            # Normalize path (ensure consistent separators)
-            draft_video_path = draft_video_path.replace('/', '\\')
-        else:
-            # macOS/Linux path processing
-            draft_video_path = os.path.join(draft_folder, draft_id, "assets", "video", material_name)
-        
+        draft_video_path = build_draft_asset_path(draft_folder, draft_id, "video", material_name)
         # Print path information
         print('replace_path:', draft_video_path)
 
