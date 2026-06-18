@@ -20,6 +20,7 @@ from .text_segment import Text_segment, Text_style, TextBubble, Text_border, Tex
 from .track import Track_type, Base_track, Track
 
 from settings.local import IS_CAPCUT_ENV
+from draft_profiles import get_draft_profile
 from .metadata import Video_scene_effect_type, Video_character_effect_type, Filter_type, Font_type
 
 class Script_material:
@@ -98,7 +99,7 @@ class Script_material:
         else:
             raise TypeError("Invalid argument type '%s'" % type(item))
 
-    def export_json(self) -> Dict[str, List[Any]]:
+    def export_json(self, is_capcut_env: Optional[bool] = None) -> Dict[str, List[Any]]:
         result = {
             "ai_translates": [],
             "audio_balances": [],
@@ -146,8 +147,10 @@ class Script_material:
             "vocal_separations": []
         }
 
-        # 根据IS_CAPCUT_ENV决定使用common_mask还是masks
-        if IS_CAPCUT_ENV:
+        # 根据当前草稿 profile 决定使用 common_mask 还是 masks
+        if is_capcut_env is None:
+            is_capcut_env = get_draft_profile().is_capcut_env
+        if is_capcut_env:
             result["common_mask"] = self.masks
         else:
             result["masks"] = self.masks
@@ -876,34 +879,19 @@ class Script_file:
             if effect["type"] == "text_effect":
                 print("\tResource id: %s '%s'" % (effect["resource_id"], effect.get("name", "")))
 
-    def dumps(self) -> str:
+    def dumps(self, profile=None) -> str:
         """将草稿文件内容导出为JSON字符串"""
+        if profile is None:
+            profile = get_draft_profile()
         self.content["fps"] = self.fps
         self.content["duration"] = self.duration
         self.content["canvas_config"] = {"width": self.width, "height": self.height, "ratio": "original"}
-        self.content["materials"] = self.materials.export_json()
+        self.content["materials"] = self.materials.export_json(profile.is_capcut_env)
 
-        self.content["last_modified_platform"] = {
-            "app_id": 359289,
-            "app_source": "cc",
-            "app_version": "6.5.0",
-            "device_id": "c4ca4238a0b923820dcc509a6f75849b",
-            "hard_disk_id": "307563e0192a94465c0e927fbc482942",
-            "mac_address": "c3371f2d4fb02791c067ce44d8fb4ed5",
-            "os": "mac",
-            "os_version": "15.5"
-        }
-
-        self.content["platform"] = {
-            "app_id": 359289,
-            "app_source": "cc",
-            "app_version": "6.5.0",
-            "device_id": "c4ca4238a0b923820dcc509a6f75849b",
-            "hard_disk_id": "307563e0192a94465c0e927fbc482942",
-            "mac_address": "c3371f2d4fb02791c067ce44d8fb4ed5",
-            "os": "mac",
-            "os_version": "15.5"
-        }
+        platform = profile.platform
+        if platform:
+            self.content["last_modified_platform"] = dict(platform)
+            self.content["platform"] = dict(platform)
 
         # 合并导入的素材
         for material_type, material_list in self.imported_materials.items():
