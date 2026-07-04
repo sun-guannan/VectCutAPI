@@ -26,6 +26,8 @@ def add_video_track(
     duration: Optional[float] = None,  # Added duration parameter
     transition: Optional[str] = None,  # Transition type
     transition_duration: Optional[float] = 0.5,  # Transition duration (seconds)
+    filter_type: Optional[str] = None,  # [本地补丁] 剪映滤镜名(Filter_type 枚举)
+    filter_intensity: float = 100.0,  # [本地补丁] 滤镜强度 0-100
     # Mask related parameters
     mask_type: Optional[str] = None,  # Mask type
     mask_center_x: float = 0.5,  # Mask center X coordinate (0-1)
@@ -159,6 +161,14 @@ def add_video_track(
         volume=volume
     )
     
+    # [本地补丁] Add filter (剪映滤镜,如 清透/自然/暖晨;intensity 0-100)
+    if filter_type:
+        try:
+            _enum = getattr(draft, "CapCut_Filter_type", draft.Filter_type) if IS_CAPCUT_ENV else draft.Filter_type
+            video_segment.add_filter(getattr(_enum, filter_type), intensity=filter_intensity)
+        except AttributeError:
+            raise ValueError(f"Unsupported filter type: {filter_type}")
+
     # Add transition effect
     if transition:
         try:

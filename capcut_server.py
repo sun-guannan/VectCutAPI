@@ -58,6 +58,8 @@ def add_video():
     duration = data.get('duration')  # New duration parameter
     transition = data.get('transition')  # New transition type parameter
     transition_duration = data.get('transition_duration', 0.5)  # New transition duration parameter, default 0.5 seconds
+    filter_type = data.get('filter_type')  # [本地补丁] 剪映滤镜名
+    filter_intensity = data.get('filter_intensity', 100.0)  # [本地补丁] 滤镜强度0-100
     volume = data.get('volume', 1.0)  # New volume parameter, default 1.0 
     
     # Get mask related parameters
@@ -105,6 +107,8 @@ def add_video():
             duration=duration,
             transition=transition,  # Pass transition type parameter
             transition_duration=transition_duration,  # Pass transition duration parameter
+            filter_type=filter_type,  # [本地补丁] 滤镜透传
+            filter_intensity=filter_intensity,  # [本地补丁]
             volume=volume,  # Pass volume parameter
             # Pass mask related parameters
             mask_type=mask_type,
@@ -566,7 +570,9 @@ def add_image():
             combo_animation=combo_animation,  # Pass combo animation parameter
             combo_animation_duration=combo_animation_duration,  # Pass combo animation duration
             transition=transition,  # Pass transition type parameter
-            transition_duration=transition_duration,  # Pass transition duration parameter (seconds)
+            transition_duration=transition_duration,  # Pass transition duration parameter
+            filter_type=filter_type,  # [本地补丁] 滤镜透传
+            filter_intensity=filter_intensity,  # [本地补丁] (seconds)
             # Pass mask related parameters
             mask_type=mask_type,
             mask_center_x=mask_center_x,
