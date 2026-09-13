@@ -259,6 +259,21 @@ Draft output is selected by `draft_profile` in `config.json`:
 - `jianying_legacy`: existing Jianying template.
 - `jianying_pro_10`: Jianying Pro 10.x Windows-style folder layout using `draft_content.json`.
 
+#### Media missing after opening a draft
+
+`save_draft` builds every media path from its `draft_folder` parameter (`<draft_folder>/<draft_id>/assets/...`), so `draft_folder` has to be the local CapCut/Jianying drafts directory. A draft that was already saved with a different folder can be repaired in place instead of being generated again, for example with [capcut-cli](https://github.com/renezander030/capcut-cli):
+
+```bash
+npx capcut-cli relink <drafts-dir>/dfd_xxx --from <old-draft_folder> --to <drafts-dir>
+```
+
+On CapCut 9.1 and later, every clip can also show as inaccessible with a relink prompt until the media is registered in `draft_materials`:
+
+```bash
+npx capcut-cli register <drafts-dir>/dfd_xxx --drafts <drafts-dir> --materials --apply
+```
+
+
 ## Pattern
 
 You can find a lot of pattern in the `pattern` directory.
