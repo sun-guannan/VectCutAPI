@@ -176,20 +176,26 @@ class VectCutClient:
 
     def save_draft(self,
                   draft_id: str,
-                  draft_folder: Optional[str] = None) -> DraftInfo:
+                  draft_folder: Optional[str] = None,
+                  project_name: Optional[str] = None,
+                  auto_deploy: bool = True) -> DraftInfo:
         """
         保存草稿并生成下载链接
 
         Args:
             draft_id: 草稿 ID
             draft_folder: 草稿文件夹路径
+            project_name: 自动部署到桌面端时使用的草稿名称
+            auto_deploy: 是否自动复制到本机剪映/CapCut 草稿目录
 
         Returns:
             DraftInfo: 包含 draft_url 的草稿信息
         """
         result = self._post("/save_draft",
                            draft_id=draft_id,
-                           draft_folder=draft_folder)
+                           draft_folder=draft_folder,
+                           project_name=project_name,
+                           auto_deploy=auto_deploy)
         if result.success:
             return DraftInfo(
                 draft_id=draft_id,

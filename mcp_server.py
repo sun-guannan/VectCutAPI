@@ -251,7 +251,14 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "draft_id": {"type": "string", "description": "草稿ID"}
+                "draft_id": {"type": "string", "description": "草稿ID"},
+                "draft_folder": {"type": "string", "description": "草稿输出目录"},
+                "project_name": {"type": "string", "description": "桌面端草稿名称"},
+                "auto_deploy": {
+                    "type": "boolean",
+                    "description": "是否自动部署到本机剪映/CapCut 草稿目录",
+                    "default": True,
+                },
             }
         }
     }

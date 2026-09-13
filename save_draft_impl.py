@@ -40,6 +40,82 @@ def build_asset_path(draft_folder: str, draft_id: str, asset_type: str, material
     """
     return build_draft_asset_path(draft_folder, draft_id, asset_type, material_name)
 
+
+def _collect_deployed_asset_path_replacements(
+    script, output_base_dir: str, draft_id: str, deployed_base_dir: str, project_name: str
+) -> Dict[str, str]:
+    """Map build-time asset paths to their final CapCut project paths."""
+    replacements = {}
+
+    for material in getattr(script.materials, "audios", []) or []:
+        if material.remote_url:
+            replacements[build_asset_path(
+                output_base_dir, draft_id, "audio", material.material_name
+            )] = build_asset_path(
+                deployed_base_dir, project_name, "audio", material.material_name
+            )
+
+    for material in getattr(script.materials, "videos", []) or []:
+        if not material.remote_url:
+            continue
+        asset_type = "image" if material.material_type == "photo" else "video"
+        replacements[build_asset_path(
+            output_base_dir, draft_id, asset_type, material.material_name
+        )] = build_asset_path(
+            deployed_base_dir, project_name, asset_type, material.material_name
+        )
+
+    return replacements
+
+
+def _rewrite_deployed_asset_paths(draft_dir: str, replacements: Dict[str, str]) -> list[str]:
+    """Rewrite absolute asset paths in all JSON-like files copied to CapCut."""
+    rewritten_files = []
+    if not replacements:
+        return rewritten_files
+
+    for root, _, filenames in os.walk(draft_dir):
+        for filename in filenames:
+            if not filename.endswith((".json", ".json.bak", ".tmp")):
+                continue
+            path = os.path.join(root, filename)
+            try:
+                with open(path, "r", encoding="utf-8") as handle:
+                    content = handle.read()
+            except (OSError, UnicodeDecodeError):
+                continue
+
+            updated = content
+            replacement_pairs = []
+            for source_path, deployed_path in replacements.items():
+                replacement_pairs.append((source_path, deployed_path))
+                escaped_source = json.dumps(source_path, ensure_ascii=False)[1:-1]
+                escaped_deployed = json.dumps(deployed_path, ensure_ascii=False)[1:-1]
+                if escaped_source != source_path:
+                    replacement_pairs.append((escaped_source, escaped_deployed))
+            for source_path, deployed_path in sorted(
+                replacement_pairs, key=lambda pair: len(pair[0]), reverse=True
+            ):
+                updated = updated.replace(source_path, deployed_path)
+            if updated == content:
+                continue
+
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(updated)
+            rewritten_files.append(path)
+
+    return rewritten_files
+
+
+def _validate_deployed_asset_paths(replacements: Dict[str, str]) -> None:
+    """Fail deployment if any copied media path is missing from the final draft."""
+    missing = [path for path in replacements.values() if not os.path.isfile(path)]
+    if missing:
+        raise FileNotFoundError(
+            "Deployed draft is missing media files: " + ", ".join(missing)
+        )
+
+
 def save_draft_background(draft_id, draft_folder, task_id, project_name=None, auto_deploy=True):
     """Background save draft to OSS and auto-deploy to CapCut desktop"""
     try:
@@ -256,16 +332,38 @@ def save_draft_background(draft_id, draft_folder, task_id, project_name=None, au
                 if os.path.exists(p):
                     capcut_projects_dir = p
             else:
-                mac_p = os.path.expanduser('~/Library/Containers/com.lemon.lvpro/Data/Documents/JianyingPro/User Data/Projects/com.lveditor.draft')
-                if os.path.exists(mac_p):
-                    capcut_projects_dir = mac_p
+                mac_candidates = [
+                    os.path.expanduser('~/Movies/CapCut/User Data/Projects/com.lveditor.draft'),
+                    os.path.expanduser('~/Library/Containers/com.lemon.lvoverseas/Data/Documents/CapCut/User Data/Projects/com.lveditor.draft'),
+                    os.path.expanduser('~/Library/Containers/com.lemon.lvoverseas/Data/Documents/JianyingPro/User Data/Projects/com.lveditor.draft'),
+                    os.path.expanduser('~/Library/Containers/com.lemon.lvpro/Data/Documents/JianyingPro/User Data/Projects/com.lveditor.draft'),
+                ]
+                capcut_projects_dir = next(
+                    (candidate for candidate in mac_candidates if os.path.isdir(candidate)),
+                    None,
+                )
 
             if capcut_projects_dir:
                 try:
                     dest_dir = os.path.join(capcut_projects_dir, target_name)
                     if os.path.exists(dest_dir):
-                        shutil.rmtree(dest_dir)
+                        raise FileExistsError(
+                            f"Refusing to overwrite existing CapCut project: {dest_dir}"
+                        )
                     shutil.copytree(draft_dir, dest_dir)
+                    replacements = _collect_deployed_asset_path_replacements(
+                        script,
+                        output_base_dir,
+                        draft_id,
+                        capcut_projects_dir,
+                        target_name,
+                    )
+                    rewritten_files = _rewrite_deployed_asset_paths(dest_dir, replacements)
+                    _validate_deployed_asset_paths(replacements)
+                    logger.info(
+                        "Rewrote %d deployed draft files to CapCut-local media paths",
+                        len(rewritten_files),
+                    )
                     # Clear any stale .locked file in destination
                     lock_f = os.path.join(dest_dir, ".locked")
                     if os.path.exists(lock_f):
@@ -274,6 +372,7 @@ def save_draft_background(draft_id, draft_folder, task_id, project_name=None, au
                     deployed_path = dest_dir
                 except Exception as ex:
                     logger.error(f"Failed to auto-deploy draft to CapCut: {str(ex)}")
+                    raise
 
         return draft_url if IS_UPLOAD_DRAFT else (deployed_path or draft_dir)
 
