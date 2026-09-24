@@ -183,6 +183,7 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "effect_type": {"type": "string", "description": "特效类型名称"},
+                "effect_category": {"type": "string", "enum": ["scene", "character"], "default": "scene", "description": "Effect category the effect_type is looked up in"},
                 "draft_id": {"type": "string", "description": "草稿ID"},
                 "start": {"type": "number", "default": 0, "description": "开始时间（秒）"},
                 "end": {"type": "number", "default": 3.0, "description": "结束时间（秒）"},
@@ -251,8 +252,12 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "draft_id": {"type": "string", "description": "草稿ID"}
-            }
+                "draft_id": {"type": "string", "description": "草稿ID"},
+                "project_name": {"type": "string", "description": "Project name shown in CapCut; also triggers deploy into CapCut's drafts folder"},
+                "draft_folder": {"type": "string", "description": "Folder to generate the draft in (default: the repo directory)"},
+                "auto_deploy": {"type": "boolean", "description": "Copy the draft into CapCut's drafts folder (default true)"}
+            },
+            "required": ["draft_id"]
         }
     }
 ]
@@ -332,6 +337,7 @@ def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
                 result = add_subtitle_impl(**arguments)
                 
             elif tool_name == "add_effect":
+                arguments.setdefault("effect_category", "scene")
                 result = add_effect_impl(**arguments)
                 
             elif tool_name == "add_sticker":
