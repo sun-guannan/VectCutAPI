@@ -242,6 +242,21 @@ mcp_client.call_tool("add_text", {
 
 调用 `save_draft` 会在`capcut_server.py`当前目录下生成一个 `dfd_` 开头的文件夹，将其复制到剪映/CapCut 草稿目录，即可在应用中看到生成的草稿。
 
+#### 打开草稿后素材丢失
+
+`save_draft` 会用 `draft_folder` 参数拼出每个素材的路径（`<draft_folder>/<draft_id>/assets/...`），所以 `draft_folder` 需要是本地剪映/CapCut 草稿目录。如果草稿已经用其他目录保存，可以直接修复路径，不必重新生成，例如使用 [capcut-cli](https://github.com/renezander030/capcut-cli)：
+
+```bash
+npx capcut-cli relink <草稿目录>/dfd_xxx --from <旧的_draft_folder> --to <草稿目录>
+```
+
+在 CapCut 9.1 及以上版本中，素材还需要登记到 `draft_materials`，否则每个片段都可能显示无法访问并提示重新链接：
+
+```bash
+npx capcut-cli register <草稿目录>/dfd_xxx --drafts <草稿目录> --materials --apply
+```
+
+
 ## 模版
 我们汇总了一些模版，放在`pattern`文件夹下。
 
