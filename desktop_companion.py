@@ -12,10 +12,15 @@ import ctypes
 from ctypes import wintypes
 import psutil
 
-user32 = ctypes.windll.user32
-kernel32 = ctypes.windll.kernel32
+IS_WINDOWS = sys.platform == "win32"
 
-WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+if IS_WINDOWS:
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+else:
+    # Windows-only feature: keep the module importable elsewhere (macOS/Linux)
+    user32 = kernel32 = WNDENUMPROC = None
 
 # Windows API constants
 SW_RESTORE = 9
@@ -37,6 +42,8 @@ CAPCUT_DRAFTS_DIR = os.path.expandvars(r"%LOCALAPPDATA%\CapCut\User Data\Project
 
 def get_capcut_windows():
     """Finds all visible top-level windows belonging to CapCut."""
+    if not IS_WINDOWS:
+        return []
     windows = []
 
     def callback(hwnd, lparam):
@@ -127,8 +134,16 @@ def reload_capcut_desktop(project_name=None, delay=0.35):
     2. If in project editor, clicks Back to Homepage (or sends navigation), waits, then clicks the first recent project card.
     3. If on homepage, clicks the first recent project card.
     """
-    windows = get_capcut_windows()
     start_time = time.time()
+    if not IS_WINDOWS:
+        return {
+            "success": False,
+            "action": "unsupported_platform",
+            "message": "Desktop auto-reload is only supported on Windows. Open the draft manually in CapCut.",
+            "elapsed_seconds": round(time.time() - start_time, 3)
+        }
+
+    windows = get_capcut_windows()
 
     if not windows:
         if os.path.exists(CAPCUT_LAUNCHER):
