@@ -266,6 +266,22 @@ def save_draft_background(draft_id, draft_folder, task_id, project_name=None, au
                     if os.path.exists(dest_dir):
                         shutil.rmtree(dest_dir)
                     shutil.copytree(draft_dir, dest_dir)
+                    # Media paths were serialized against draft_dir; point them at the deployed copy
+                    src_esc = json.dumps(draft_dir)[1:-1]
+                    dst_esc = json.dumps(dest_dir)[1:-1]
+                    for root, _, files in os.walk(dest_dir):
+                        for fn in files:
+                            if fn.endswith(('.json', '.tmp', '.bak')):
+                                fp = os.path.join(root, fn)
+                                with open(fp, 'r', encoding='utf-8', errors='ignore') as f:
+                                    txt = f.read()
+                                new = txt.replace(src_esc, dst_esc).replace(draft_dir, dest_dir)
+                                if new != txt:
+                                    with open(fp, 'w', encoding='utf-8') as f:
+                                        f.write(new)
+                    # Drop the intermediate copy only when it was written next to the code (no draft_folder given)
+                    if not draft_folder and os.path.abspath(draft_dir) != os.path.abspath(dest_dir):
+                        shutil.rmtree(draft_dir, ignore_errors=True)
                     # Clear any stale .locked file in destination
                     lock_f = os.path.join(dest_dir, ".locked")
                     if os.path.exists(lock_f):
