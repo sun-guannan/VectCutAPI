@@ -16,7 +16,7 @@ The CapCut API MCP Server is a video editing service based on the Model Context 
 
 | Tool Name | Description | Key Parameters |
 |-----------|-------------|----------------|
-| `create_draft` | Create new video draft project | width, height |
+| `create_draft` | Create new video draft project | width, height, fps |
 | `add_text` | Add text elements | text, font_size, color, shadow, background |
 | `add_video` | Add video track | video_url, start, end, transform, volume |
 | `add_audio` | Add audio track | audio_url, volume, speed, effects |

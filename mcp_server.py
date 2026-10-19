@@ -44,7 +44,8 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "width": {"type": "integer", "default": 1080, "description": "视频宽度"},
-                "height": {"type": "integer", "default": 1920, "description": "视频高度"}
+                "height": {"type": "integer", "default": 1920, "description": "视频高度"},
+                "fps": {"type": "integer", "default": 30, "minimum": 1, "description": "时间线帧率"}
             }
         }
     },
@@ -308,7 +309,8 @@ def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
             if tool_name == "create_draft":
                 draft_id, script = get_or_create_draft(
                     width=arguments.get("width", 1080),
-                    height=arguments.get("height", 1920)
+                    height=arguments.get("height", 1920),
+                    fps=arguments.get("fps", 30)
                 )
                 result = {
                     "draft_id": str(draft_id),
