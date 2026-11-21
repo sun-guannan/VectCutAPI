@@ -3,11 +3,12 @@ import pyJianYingDraft as draft
 import time
 from draft_cache import DRAFT_CACHE, update_cache
 
-def create_draft(width=1080, height=1920):
+def create_draft(width=1080, height=1920, fps=30):
     """
     Create new CapCut draft
     :param width: Video width, default 1080
     :param height: Video height, default 1920
+    :param fps: Timeline frame rate, default 30
     :return: (draft_name, draft_path, draft_id, draft_url)
     """
     # Generate timestamp and draft_id
@@ -16,19 +17,20 @@ def create_draft(width=1080, height=1920):
     draft_id = f"dfd_cat_{unix_time}_{unique_id}"  # Use Unix timestamp and UUID combination
     
     # Create CapCut draft with specified resolution
-    script = draft.Script_file(width, height)
+    script = draft.Script_file(width, height, fps=fps)
     
     # Store in global cache
     update_cache(draft_id, script)
     
     return script, draft_id
 
-def get_or_create_draft(draft_id=None, width=1080, height=1920):
+def get_or_create_draft(draft_id=None, width=1080, height=1920, fps=30):
     """
     Get or create CapCut draft
     :param draft_id: Draft ID, if None or corresponding zip file not found, create new draft
     :param width: Video width, default 1080
     :param height: Video height, default 1920
+    :param fps: Timeline frame rate of a newly created draft, default 30
     :return: (draft_name, draft_path, draft_id, draft_dir, script)
     """
     global DRAFT_CACHE  # Declare use of global variable
@@ -45,6 +47,7 @@ def get_or_create_draft(draft_id=None, width=1080, height=1920):
     script, generate_draft_id = create_draft(
         width=width,
         height=height,
+        fps=fps,
     )
     return generate_draft_id, script
     

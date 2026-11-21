@@ -16,7 +16,7 @@ CapCut API MCP 服务器是一个基于 Model Context Protocol (MCP) 的视频�
 
 | 工具名称 | 功能描述 | 主要参数 |
 |---------|----------|----------|
-| `create_draft` | 创建新的视频草稿项目 | width, height |
+| `create_draft` | 创建新的视频草稿项目 | width, height, fps |
 | `add_text` | 添加文字元素 | text, font_size, color, shadow, background |
 | `add_video` | 添加视频轨道 | video_url, start, end, transform, volume |
 | `add_audio` | 添加音频轨道 | audio_url, volume, speed, effects |

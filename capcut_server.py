@@ -208,6 +208,7 @@ def create_draft_service():
     # Get parameters
     width = data.get('width', 1080)
     height = data.get('height', 1920)
+    fps = data.get('fps', 30)
     
     result = {
         "success": False,
@@ -217,7 +218,7 @@ def create_draft_service():
     
     try:
         # Create new draft
-        script, draft_id = create_draft(width=width, height=height)
+        script, draft_id = create_draft(width=width, height=height, fps=fps)
         
         result["success"] = True
         result["output"] = {
