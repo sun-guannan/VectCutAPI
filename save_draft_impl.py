@@ -40,6 +40,38 @@ def build_asset_path(draft_folder: str, draft_id: str, asset_type: str, material
     """
     return build_draft_asset_path(draft_folder, draft_id, asset_type, material_name)
 
+def _finalize_capcut_draft(src_dir, dest_dir):
+    """CapCut 9.x reads the timeline from template-2.tmp and lists the project
+    from draft_meta_info.json: sync both with the generated draft_info.json."""
+    import uuid as _uuid
+    info_p = os.path.join(dest_dir, "draft_info.json")
+    with open(info_p, encoding="utf-8") as f:
+        text = f.read()
+    # media paths: point at the deployed copy, not the repo working copy
+    text = text.replace(os.path.abspath(src_dir), dest_dir)
+    for name in ("draft_info.json", "draft_info.json.bak", "template-2.tmp"):
+        with open(os.path.join(dest_dir, name), "w", encoding="utf-8") as f:
+            f.write(text)
+    info = json.loads(text)
+    meta_p = os.path.join(dest_dir, "draft_meta_info.json")
+    meta = {}
+    if os.path.exists(meta_p):
+        with open(meta_p, encoding="utf-8") as f:
+            meta = json.load(f)
+    now_us = int(time.time() * 1_000_000)
+    meta.update({
+        "draft_id": str(_uuid.uuid4()).upper(),
+        "draft_name": os.path.basename(dest_dir),
+        "draft_fold_path": dest_dir,
+        "draft_root_path": os.path.dirname(dest_dir),
+        "tm_draft_create": now_us,
+        "tm_draft_modified": now_us,
+        "tm_duration": int(info.get("duration", 0)),
+    })
+    with open(meta_p, "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False)
+
+
 def save_draft_background(draft_id, draft_folder, task_id, project_name=None, auto_deploy=True):
     """Background save draft to OSS and auto-deploy to CapCut desktop"""
     try:
@@ -256,16 +288,23 @@ def save_draft_background(draft_id, draft_folder, task_id, project_name=None, au
                 if os.path.exists(p):
                     capcut_projects_dir = p
             else:
-                mac_p = os.path.expanduser('~/Library/Containers/com.lemon.lvpro/Data/Documents/JianyingPro/User Data/Projects/com.lveditor.draft')
-                if os.path.exists(mac_p):
-                    capcut_projects_dir = mac_p
+                for mac_p in (os.path.expanduser('~/Movies/CapCut/User Data/Projects/com.lveditor.draft'),
+                              os.path.expanduser('~/Library/Containers/com.lemon.lvpro/Data/Documents/JianyingPro/User Data/Projects/com.lveditor.draft')):
+                    if os.path.exists(mac_p):
+                        capcut_projects_dir = mac_p
+                        break
 
             if capcut_projects_dir:
                 try:
                     dest_dir = os.path.join(capcut_projects_dir, target_name)
-                    if os.path.exists(dest_dir):
-                        shutil.rmtree(dest_dir)
+                    # never overwrite an existing project: add a suffix instead
+                    n = 2
+                    base_dest = dest_dir
+                    while os.path.exists(dest_dir):
+                        dest_dir = f"{base_dest} ({n})"
+                        n += 1
                     shutil.copytree(draft_dir, dest_dir)
+                    _finalize_capcut_draft(draft_dir, dest_dir)
                     # Clear any stale .locked file in destination
                     lock_f = os.path.join(dest_dir, ".locked")
                     if os.path.exists(lock_f):
